@@ -1,0 +1,23 @@
+{
+  "id": "foundry-doom-v2",
+  "type": "module",
+  "title": "FoundryDOOM v2",
+  "description": "Runs a bundled browser DOS DOOM session in a Foundry window with scene control, macro API, pop-out, fullscreen, and GM launch broadcast support.",
+  "version": "0.2.0",
+  "authors": [
+    {
+      "name": "Victo"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14.364",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "scripts/foundry-doom-v2.js"
+  ],
+  "styles": [
+    "styles/foundry-doom-v2.css"
+  ]
+}

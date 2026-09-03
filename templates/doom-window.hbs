@@ -1,0 +1,36 @@
+<div class="fdv2-shell">
+  <div class="fdv2-stage">
+    <iframe
+      class="fdv2-frame"
+      data-doom-frame
+      src="{{iframeSrc}}"
+      title="{{moduleTitle}}"
+      allow="autoplay; fullscreen; gamepad; pointer-lock"
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+
+  <footer class="fdv2-toolbar" aria-label="DOOM controls">
+    <div class="fdv2-title">{{moduleTitle}}</div>
+    <div class="fdv2-status" data-doom-status>Starting runtime</div>
+    <nav class="fdv2-actions" aria-label="DOOM window actions">
+      <button type="button" data-doom-action="focus" title="Focus DOOM" aria-label="Focus DOOM">
+        <i class="fa-solid fa-keyboard"></i>
+      </button>
+      <button type="button" data-doom-action="reload" title="Reload DOOM" aria-label="Reload DOOM">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+      <button type="button" data-doom-action="fullscreen" title="Fullscreen" aria-label="Fullscreen">
+        <i class="fa-solid fa-expand"></i>
+      </button>
+      <button type="button" data-doom-action="popout" title="Open in a separate tab" aria-label="Open in a separate tab">
+        <i class="fa-solid fa-up-right-from-square"></i>
+      </button>
+      {{#if canBroadcast}}
+      <button type="button" data-doom-action="broadcast" title="Open for connected players" aria-label="Open for connected players">
+        <i class="fa-solid fa-users"></i>
+      </button>
+      {{/if}}
+    </nav>
+  </footer>
+</div>

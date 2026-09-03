@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FoundryDOOM v2</title>
+  <link rel="stylesheet" href="vendor/js-dos/js-dos.css">
+  <style>
+    html,
+    body,
+    #dos {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      color: #f4dfbf;
+      font-family: "Signika", "Segoe UI", sans-serif;
+    }
+
+    #dos {
+      outline: 0;
+    }
+
+    #status {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      color: #f4dfbf;
+      background: #030303;
+      font-size: 16px;
+      line-height: 1.35;
+      letter-spacing: 0;
+      text-align: center;
+      transition: opacity 160ms ease, visibility 160ms ease;
+      pointer-events: none;
+    }
+
+    #status.hidden {
+      visibility: hidden;
+      opacity: 0;
+    }
+
+    #status[data-tone="error"] {
+      color: #fff;
+      background: #260806;
+    }
+
+    .jsdos-rso {
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      outline: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="dos" tabindex="0"></div>
+  <div id="status" role="status" aria-live="polite">Loading runtime</div>
+  <script src="vendor/js-dos/js-dos.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const DEFAULT_BUNDLE_PATH = "bundle/foundry-doom-v2.jsdos";
+      const dosElement = document.getElementById("dos");
+      const statusElement = document.getElementById("status");
+      const params = new URLSearchParams(window.location.search);
+      let dosPlayer = null;
+
+      function post(type, data = {}) {
+        window.parent?.postMessage({ foundryDoomV2: { type, ...data } }, window.location.origin);
+      }
+
+      function setStatus(message, tone = "", hidden = false) {
+        statusElement.textContent = message;
+        if (tone) statusElement.dataset.tone = tone;
+        else delete statusElement.dataset.tone;
+        statusElement.classList.toggle("hidden", hidden);
+        if (message) post("status", { message, tone });
+      }
+
+      function clampNumber(value, min, max, fallback) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) return fallback;
+        return Math.min(max, Math.max(min, number));
+      }
+
+      function resolveBundlePath(value) {
+        const trimmed = typeof value === "string" ? value.trim() : "";
+        const path = trimmed || DEFAULT_BUNDLE_PATH;
+
+        if (/^[a-z][a-z0-9+.-]*:/i.test(path) || path.startsWith("//")) return path;
+        if (path.startsWith("modules/foundry-doom-v2/")) return path.slice("modules/foundry-doom-v2/".length);
+        if (path.startsWith("/modules/foundry-doom-v2/")) return path.slice("/modules/foundry-doom-v2/".length);
+        return path.replace(/^\.\//, "");
+      }
+
+      function focusGame() {
+        window.focus();
+        dosElement.focus({ preventScroll: true });
+        dosElement.querySelector("canvas")?.setAttribute("tabindex", "0");
+        dosElement.querySelector("canvas")?.focus({ preventScroll: true });
+      }
+
+      async function stopGame() {
+        try {
+          await dosPlayer?.stop?.();
+          setStatus("Stopped");
+        } catch (error) {
+          console.warn("FoundryDOOM v2 | Failed to stop emulator", error);
+        }
+      }
+
+      window.addEventListener("message", (event) => {
+        if (event.origin !== window.location.origin) return;
+
+        const payload = event.data?.foundryDoomV2;
+        if (!payload || typeof payload !== "object") return;
+
+        if (payload.type === "focus") focusGame();
+        if (payload.type === "stop") stopGame();
+      });
+
+      document.addEventListener("pointerdown", focusGame, { passive: true });
+
+      try {
+        if (typeof Dos !== "function") throw new Error("js-dos runtime did not load.");
+
+        const bundlePath = resolveBundlePath(params.get("bundle"));
+        const volume = clampNumber(params.get("volume"), 0, 100, 80) / 100;
+        const mouseSensitivity = clampNumber(params.get("mouseSensitivity"), 10, 200, 50) / 100;
+        const workerThread = params.get("workerThread") !== "0";
+
+        setStatus("Loading DOOM bundle");
+        dosPlayer = Dos(dosElement, {
+          url: bundlePath,
+          pathPrefix: "vendor/js-dos/emulators/",
+          backend: "dosbox",
+          backendLocked: true,
+          workerThread,
+          autoStart: true,
+          countDownStart: 0,
+          autoSave: true,
+          theme: "black",
+          imageRendering: "pixelated",
+          renderBackend: "webgl",
+          renderAspect: "4/3",
+          mouseCapture: true,
+          mouseSensitivity,
+          noCursor: true,
+          volume,
+          onEvent: (eventName) => {
+            if (eventName === "emu-ready") setStatus("Starting emulator");
+            if (eventName === "ci-ready") {
+              setStatus("Running", "", true);
+              post("ready", { message: "Running" });
+              window.setTimeout(focusGame, 100);
+            }
+          },
+        });
+
+        window.foundryDoomV2Player = dosPlayer;
+      } catch (error) {
+        console.error("FoundryDOOM v2 | Failed to start js-dos", error);
+        const message = error?.message ?? String(error);
+        setStatus(`Failed to start DOOM: ${message}`, "error");
+        post("error", { message });
+      }
+    })();
+  </script>
+</body>
+</html>

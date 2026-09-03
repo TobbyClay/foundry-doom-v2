@@ -1,0 +1,6 @@
+# Proprietary game content and generated game bundles must never be committed.
+/bundle/
+/vendor/
+*.wad
+*.WAD
+*.jsdos
